@@ -19,12 +19,16 @@ class ExamGui:
         self._root.title("Examinator")
         self._root.geometry("500x500")
         self._font = ("Comic Sans MS", 20, "bold")
+        self._cur_qnum = -1
 
     def _ask_question(self):
-        q = self._emgr.get_next_question()
-        if q is None:
+        self._cur_qnum += 1
+        qpaper = self._emgr.get_question_paper()
+        if self._cur_qnum >= len(qpaper):
             self._root.after(0, lambda: self._show_results())
             return
+
+        q = qpaper[self._cur_qnum]
 
         frame = tk.Frame(self._root, width=100, height=50)
         frame.pack()
@@ -35,13 +39,13 @@ class ExamGui:
         e.focus_set()
         e.grid(row=0, column=2)
 
-        def on_submit(gui, q):
+        def on_submit(gui):
             answer = e.get().strip()
             if len(answer) == 0:
                 return
-            q.response = answer
+            gui._emgr.submit_answer(self._cur_qnum, answer)
             frame.destroy()
-            gui._root.after(0, lambda: gui._evaluate_response(q))
+            gui._root.after(0, lambda: gui._evaluate_response())
 
         tk.Label(frame, text=" ").grid(row=1)
 
@@ -50,14 +54,14 @@ class ExamGui:
             text="Submit",
             width=20,
             font=self._font,
-            command=lambda: on_submit(self, q),
+            command=lambda: on_submit(self),
         ).grid(row=2)
 
-    def _evaluate_response(self, q):
+    def _evaluate_response(self):
         frame = tk.Frame(self._root, width=100, height=50)
         frame.pack()
 
-        if q.evaluate():
+        if self._emgr.evaluate_answer(self._cur_qnum):
             tk.Label(frame, font=self._font, text="Correct!!!", fg="green").pack()
         else:
             tk.Label(frame, font=self._font, text="Wrong!!!", fg="red").pack()
@@ -66,10 +70,7 @@ class ExamGui:
 
         def on_next(gui):
             frame.destroy()
-            if gui._emgr.questions_remaining > 0:
-                gui._root.after(0, lambda: gui._ask_question())
-            else:
-                gui._root.after(0, lambda: gui._show_results())
+            gui._root.after(0, lambda: gui._ask_question())
 
         tk.Button(
             frame, text="Next", width=20, font=self._font, command=lambda: on_next(self)
@@ -79,15 +80,22 @@ class ExamGui:
         frame = tk.Frame(self._root, width=100, height=50)
         frame.pack()
 
+        self._emgr.stop_exam()
         score = 0
         r = 0
-        for q in self._emgr.get_answer_sheet():
-            l = tk.Label(frame, font=self._font, text=q.text + q.response)
+
+        qpaper = self._emgr.get_question_paper()
+        apaper = self._emgr.get_answer_sheet()
+        for i in range(0, len(qpaper)):
+            txt = qpaper[i].text
+            if apaper[i] is not None:
+                txt += apaper[i]
+            l = tk.Label(frame, font=self._font, text=txt)
             l.grid(row=r, column=0, columnspan=2)
 
             s = ttk.Separator(frame, orient="vertical")
             s.grid(row=r, column=2, sticky="ns")
-            if q.evaluate():
+            if self._emgr.evaluate_answer(i):
                 tk.Label(frame, font=self._font, text=u"\u2713", fg="green").grid(
                     row=r, column=3
                 )
@@ -106,13 +114,12 @@ class ExamGui:
             frame,
             font=self._font,
             fg="blue",
-            text="Score: " + str(score) + " / " + str(self._emgr.num_questions),
+            text="Score: " + str(score) + " / " + str(len(qpaper)),
         )
         l3.grid(row=r)
 
     def _start_exam(self, testlist, numquest, duration):
-        self._emgr.opted_tests = testlist
-        self._emgr.num_questions = numquest
+        self._emgr.configure_practice_test(testlist, numquest)
         self._emgr.start_exam(duration)
 
         tframe = tk.Frame(self._root, width=100, height=10)
@@ -129,7 +136,7 @@ class ExamGui:
         tk.Label(frame, text=" ").pack()
         tk.Label(frame, text="Select Tests", font=self._font, fg="blue").pack()
 
-        menu = self._emgr.tests
+        menu = self._emgr.get_practice_test_list()
         vl = []
         for (tst, f) in menu.items():
             v = tk.StringVar()

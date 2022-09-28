@@ -8,26 +8,10 @@
 
 
 class Question(object):
-    def __init__(self, txt, ans):
+    def __init__(self, txt, marks=1):
         self._text = txt
-        self._answer = ans
-        self._response = ""
-
-    @property
-    def response(self):
-        return self._response
-
-    @response.setter
-    def response(self, r):
-        self._response = r
+        self._marks = marks
 
     @property
     def text(self):
         return self._text
-
-    @property
-    def answer(self):
-        return self._answer
-
-    def evaluate(self):
-        return self._answer.upper() == self._response.upper()

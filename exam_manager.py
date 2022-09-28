@@ -6,107 +6,34 @@
 # in the file LICENSE in the source distribution
 #
 
-import random
 import threading
-import yaml
 
 import question
+import practice_gen
 
 
 class ExamManager:
     def __init__(self):
-        self._qtotal = 1
-        self._qremain = 1
-        self._answer_sheet = []
+        self._qcomposer = None
+
+        self._answer_sheet = None
 
         self._exam_running = False
         self._exam_timer = None
 
-        self._tests = {
-            "Addition": self._get_one_add_question,
-            "Subtraction": self._get_one_subtract_question,
-            "Multiplication": self._get_one_multiply_question,
-            "Opposites": self._get_one_opposites_question,
-        }
-        self._optests = []
+    def get_practice_test_list(self):
+        return practice_gen.PracticeSetGen._tests
 
-        self._opposites = None
+    def configure_practice_test(self, optests, numq):
+        self._qcomposer = practice_gen.PracticeSetGen(optests, numq)
+        self._answer_sheet = [None] * len(self._qcomposer.get_question_paper())
 
-    @property
-    def questions_remaining(self):
-        return self._qremain
-
-    @property
-    def num_questions(self):
-        return self._qtotal
-
-    @num_questions.setter
-    def num_questions(self, n):
-        self._qtotal = n
-        self._qremain = n
-
-    @property
-    def tests(self):
-        return self._tests
-
-    @property
-    def opted_tests(self):
-        return self._optests
-
-    @opted_tests.setter
-    def opted_tests(self, tl):
-        self._optests = tl
-        if "Opposites" in tl:
-            with open("samples/opposites.yaml", "r") as stream:
-                data = yaml.safe_load(stream)
-                self._opposites = data["Opposites"]
-
-    def _get_one_add_question(self):
-        n1 = random.randint(0, 10)
-        n2 = random.randint(0, 10)
-        ans = str(n1 + n2)
-        txt = str(n1) + " + " + str(n2) + " = "
-        q = question.Question(txt, ans)
-        return q
-
-    def _get_one_multiply_question(self):
-        n1 = random.randint(0, 10)
-        n2 = random.randint(0, 10)
-        ans = str(n1 * n2)
-        txt = str(n1) + " \u2715 " + str(n2) + " = "
-        q = question.Question(txt, ans)
-        return q
-
-    def _get_one_subtract_question(self):
-        v1 = random.randint(0, 10)
-        v2 = random.randint(0, 10)
-        n1 = max(v1, v2)
-        n2 = min(v1, v2)
-        ans = str(n1 - n2)
-        txt = str(n1) + " - " + str(n2) + " = "
-        q = question.Question(txt, ans)
-        return q
-
-    def _get_one_opposites_question(self):
-        word, opp = random.choice(list(self._opposites.items()))
-        ans = opp
-        txt = "The opposite of '" + word + "' is "
-        q = question.Question(txt, ans)
-        return q
-
-    def get_next_question(self):
-        if self._qremain <= 0 or not self._exam_running:
-            self.stop_exam()
-            return None
-        else:
-            self._qremain -= 1
-
-        q = self._tests[self._optests[random.randint(0, len(self._optests) - 1)]]()
-
-        self._answer_sheet.append(q)
-        return q
+    def get_question_paper(self):
+        return self._qcomposer.get_question_paper()
 
     def get_answer_sheet(self):
+        if self._exam_running:
+            return None
         return self._answer_sheet
 
     def stop_exam(self):
@@ -114,6 +41,18 @@ class ExamManager:
             return
         self._exam_running = False
         self._exam_timer.cancel()
+
+    def submit_answer(self, qnum, ans):
+        if not self._exam_running:
+            return
+        self._answer_sheet[qnum] = ans
+
+    def evaluate_answer(self, qnum):
+        ans = self._answer_sheet[qnum]
+        if ans is None:
+            return False
+        anskey = self._qcomposer.get_answer_key()
+        return ans.upper() == anskey[qnum].upper() 
 
     def start_exam(self, tsec):
         if self._exam_running:
