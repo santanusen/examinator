@@ -60,7 +60,9 @@ class PracticeSetGen:
                 data = yaml.safe_load(stream)
                 self._opposites = data["Opposites"]
         for i in range(0, numq):
-            q, a = PracticeSetGen._tests[optests[random.randint(0, len(optests) - 1)]](self)
+            q, a = PracticeSetGen._tests[optests[random.randint(0, len(optests) - 1)]](
+                self
+            )
             self._qpaper.append(q)
             self._anskey.append(a)
 
@@ -72,9 +74,8 @@ class PracticeSetGen:
 
 
 PracticeSetGen._tests = {
-       "Addition": PracticeSetGen._get_one_add_question,
-       "Subtraction": PracticeSetGen._get_one_subtract_question,
-       "Multiplication": PracticeSetGen._get_one_multiply_question,
-       "Opposites": PracticeSetGen._get_one_opposites_question,
+    "Addition": PracticeSetGen._get_one_add_question,
+    "Subtraction": PracticeSetGen._get_one_subtract_question,
+    "Multiplication": PracticeSetGen._get_one_multiply_question,
+    "Opposites": PracticeSetGen._get_one_opposites_question,
 }
-
