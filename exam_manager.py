@@ -15,8 +15,9 @@ import practice_gen
 
 class ExamManager:
     def __init__(self):
-        self._qcomposer = None
+        self._qcomposer = practice_gen.PracticeSetGen()
 
+        self._question_paper = None
         self._answer_sheet = None
 
         self._exam_running = False
@@ -25,14 +26,14 @@ class ExamManager:
         self._exam_stop_time = None
 
     def get_practice_test_list(self):
-        return practice_gen.PracticeSetGen._tests
+        return self._qcomposer.get_test_list()
 
     def configure_practice_test(self, optests, numq):
-        self._qcomposer = practice_gen.PracticeSetGen(optests, numq)
-        self._answer_sheet = [None] * len(self._qcomposer.get_question_paper())
+        self._question_paper = self._qcomposer.gen_question_paper(optests, numq)
+        self._answer_sheet = [None] * len(self._question_paper)
 
     def get_question_paper(self):
-        return self._qcomposer.get_question_paper()
+        return self._question_paper
 
     def get_answer_sheet(self):
         if self._exam_running:
@@ -46,11 +47,7 @@ class ExamManager:
         return True
 
     def evaluate_answer(self, qnum):
-        ans = self._answer_sheet[qnum]
-        if ans is None:
-            return False
-        anskey = self._qcomposer.get_answer_key()
-        return ans.upper() == anskey[qnum].upper()
+        return self._qcomposer.evaluate_answer(qnum, self._answer_sheet[qnum])
 
     def time_remaining(self):
         if not self._exam_running:

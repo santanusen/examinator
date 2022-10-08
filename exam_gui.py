@@ -175,7 +175,9 @@ class ExamGui:
             tframe, text="Examinator", fg="magenta", font=self._font, anchor="w"
         ).grid()
 
-        self._timer_label = tk.Label(tframe, width=40, text="", anchor="e")
+        self._timer_label = tk.Label(
+            tframe, width=30, text="", font=self._font2, anchor="e"
+        )
         self._timer_label.grid(row=0, column=1)
         self._tick_timer = threading.Timer(0, self._on_timer_tick)
         self._tick_timer.start()
@@ -194,7 +196,7 @@ class ExamGui:
 
         menu = self._emgr.get_practice_test_list()
         vl = []
-        for (tst, f) in menu.items():
+        for tst in menu:
             v = tk.StringVar()
             vl.append(v)
             tk.Checkbutton(

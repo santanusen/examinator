@@ -15,8 +15,8 @@ import question
 class PracticeSetGen:
     @staticmethod
     def _get_one_add_question(slf):
-        n1 = random.randint(0, 10)
-        n2 = random.randint(0, 10)
+        n1 = random.randint(0, 100)
+        n2 = random.randint(0, 100)
         ans = str(n1 + n2)
         txt = str(n1) + " + " + str(n2) + " = "
         q = question.Question(txt)
@@ -33,8 +33,8 @@ class PracticeSetGen:
 
     @staticmethod
     def _get_one_subtract_question(slf):
-        v1 = random.randint(0, 10)
-        v2 = random.randint(0, 10)
+        v1 = random.randint(0, 100)
+        v2 = random.randint(0, 100)
         n1 = max(v1, v2)
         n2 = min(v1, v2)
         ans = str(n1 - n2)
@@ -50,11 +50,19 @@ class PracticeSetGen:
         q = question.Question(txt)
         return q, ans
 
-    def __init__(self, optests, numq):
-        self._qpaper = []
-        self._anskey = []
+    def __init__(self):
+        self._qpaper = None
+        self._anskey = None
         self._opposites = None
 
+    def gen_question_paper(self, optests, numq):
+        if self._qpaper is not None:
+            return self._qpaper
+        if len(optests) == 0:
+            return self._qpaper
+
+        self._qpaper = []
+        self._anskey = []
         if "Opposites" in optests:
             with open("samples/opposites.yaml", "r") as stream:
                 data = yaml.safe_load(stream)
@@ -65,12 +73,18 @@ class PracticeSetGen:
             )
             self._qpaper.append(q)
             self._anskey.append(a)
-
-    def get_question_paper(self):
         return self._qpaper
 
-    def get_answer_key(self):
-        return self._anskey
+    def get_question_paper():
+        return self._qpaper
+
+    def evaluate_answer(self, qnum, ans):
+        if ans is None:
+            return False
+        return ans.upper() == self._anskey[qnum].upper()
+
+    def get_test_list(self):
+        return PracticeSetGen._tests.keys()
 
 
 PracticeSetGen._tests = {
