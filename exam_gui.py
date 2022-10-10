@@ -14,7 +14,20 @@ import exam_manager
 
 
 class ExamGui:
+    """
+    This is the `View` component of the application.
+
+    Implements a graphical user interface using tkinter.
+    Interacts with the `Controller` ExamManager class.
+    """
+
     def __init__(self):
+        """
+        Instantiates ExamManager and creates the root frame.
+        The root frame remains throughout the life of the application.
+        Other frames are drawn on top of the root frame as and when
+        required.
+        """
         self._emgr = exam_manager.ExamManager()
         self._root = tk.Tk()
         self._root.title("Examinator")
@@ -25,7 +38,12 @@ class ExamGui:
         self._tick_timer = None
         self._timer_label = None
 
-    def _ask_question(self):
+    def _ask_next_question(self):
+        """
+        Get the next question from the question paper, take the response
+        answer from the user and submit the answer to the exam manager.
+        """
+        # Get the next question.
         self._cur_qnum += 1
         qpaper = self._emgr.get_question_paper()
         if self._cur_qnum >= len(qpaper):
@@ -34,6 +52,7 @@ class ExamGui:
 
         q = qpaper[self._cur_qnum]
 
+        # Layout the question on a frame.
         frame = tk.Frame(self._root, width=100, height=50)
         frame.pack()
 
@@ -58,6 +77,7 @@ class ExamGui:
         r += 1
 
         def on_submit(gui):
+            # Validate and collect user response and submit it to the exam manager.
             answer = e.get().strip()
             if len(answer) == 0:
                 return
@@ -66,6 +86,7 @@ class ExamGui:
             if sa_success:
                 gui._root.after(0, lambda: gui._evaluate_response())
             else:
+                # Exam manager refused to take the answer, exam time up.
                 gui._root.after(0, lambda: gui._show_results())
 
         tk.Label(frame, text=" ").grid(row=1)
@@ -79,6 +100,10 @@ class ExamGui:
         ).grid(row=r)
 
     def _evaluate_response(self):
+        """
+        Ask exam manager to evaluate the answer to the current question and
+        show the result to the user.
+        """
         frame = tk.Frame(self._root, width=100, height=50)
         frame.pack()
 
@@ -91,13 +116,16 @@ class ExamGui:
 
         def on_next(gui):
             frame.destroy()
-            gui._root.after(0, lambda: gui._ask_question())
+            gui._root.after(0, lambda: gui._ask_next_question())
 
         tk.Button(
             frame, text="Next", width=20, font=self._font, command=lambda: on_next(self)
         ).pack()
 
     def _show_results(self):
+        """
+        Ask exam manager to end the exam and show the results.
+        """
         frame = tk.Frame(self._root, width=100, height=50)
         frame.pack()
 
@@ -148,6 +176,9 @@ class ExamGui:
         r += 1
 
     def _on_timer_tick(self):
+        """
+        On each tick, check how much time is remaining with exam manager and display it.
+        """
         if self._timer_label is None:
             return
         trem = round(self._emgr.time_remaining())
@@ -156,25 +187,31 @@ class ExamGui:
             tstr = "-- : -- : --"
         else:
             tstr = "%02d : %02d : %02d" % (trem // 3600, (trem % 3600) // 60, trem % 60)
+        # Change color based on urgency!
         fgcol = "green"
         if trem < 60:
             fgcol = "red"
         elif trem < 300:
-            fgcol = "#f77"
+            fgcol = "purple"
 
         self._timer_label.config(text=tstr, foreground=fgcol)
         self._tick_timer = threading.Timer(1, self._on_timer_tick)
         self._tick_timer.start()
 
-    def _start_exam(self, testlist, numquest, duration):
-        self._emgr.configure_practice_test(testlist, numquest)
+    def _start_exam(self, duration):
+        """
+        Ask exam manager to start the exam. Create the top frame to display
+        remaining time through the exam. Start timer to show remaining time. 
+        """
         self._emgr.start_exam(duration)
 
+        # Top frame.
         tframe = tk.Frame(self._root, width=100, height=10)
         tk.Label(
             tframe, text="Examinator", fg="magenta", font=self._font, anchor="w"
         ).grid()
 
+        # Label to display remaining time.
         self._timer_label = tk.Label(
             tframe, width=30, text="", font=self._font2, anchor="e"
         )
@@ -182,18 +219,24 @@ class ExamGui:
         self._tick_timer = threading.Timer(0, self._on_timer_tick)
         self._tick_timer.start()
 
+        # Add separator.
         tk.Label(tframe, text=" ", font=self._font).grid(row=2)
         tframe.pack()
         ttk.Separator(self._root, orient="horizontal").pack(fill="x")
-        self._root.after(0, lambda: self._ask_question())
+        self._root.after(0, lambda: self._ask_next_question())
 
-    def _menu(self):
+    def _practice_menu(self):
+        """
+        Menu to select from a list of tests offered, set exam time and
+        number of questions.
+        """
         frame = tk.Frame(self._root, width=100, height=50)
         frame.pack()
         tk.Label(frame, text=" ").pack()
         tl_label = tk.Label(frame, text="Select Tests", font=self._font2, fg="blue")
         tl_label.pack()
 
+        # Get the list of tests offered and display them as check boxes.
         menu = self._emgr.get_practice_test_list()
         vl = []
         for tst in menu:
@@ -220,6 +263,11 @@ class ExamGui:
         tm_entry.pack()
 
         def on_start(gui):
+            """
+            Validate and collect user input. If input is invalid turn the text
+            in corresponding label red. If input is fine, configure the exam
+            manager with the tests selected and start the exam.
+            """
             tl = []
             for i in range(0, len(vl)):
                 t = vl[i].get()
@@ -245,7 +293,8 @@ class ExamGui:
             tm_label.config(fg="blue")
 
             frame.destroy()
-            gui._start_exam(tl, nq, tm * 60)
+            gui._emgr.configure_practice_test(tl, nq)
+            gui._start_exam(tm * 60)
 
         tk.Label(frame, text=" ").pack()
 
@@ -258,11 +307,17 @@ class ExamGui:
         ).pack()
 
     def _clean_up(self):
+        """
+        Clean up resources.
+        """
         if self._tick_timer is not None:
             self._tick_timer.cancel()
         self._emgr.stop_exam()
 
     def run(self):
-        self._menu()
+        """
+        API to start the GUI session.
+        """
+        self._practice_menu()
         self._root.mainloop()
         self._clean_up()
