@@ -15,8 +15,9 @@ import question
 class PracticeSetGen:
     @staticmethod
     def _get_one_add_question(slf):
-        n1 = random.randint(0, 100)
-        n2 = random.randint(0, 100)
+        nmax = 1000000
+        n1 = random.randint(0, nmax)
+        n2 = random.randint(0, nmax)
         ans = str(n1 + n2)
         txt = str(n1) + " + " + str(n2) + " = "
         q = question.Question(txt)
@@ -24,8 +25,9 @@ class PracticeSetGen:
 
     @staticmethod
     def _get_one_multiply_question(slf):
-        n1 = random.randint(0, 10)
-        n2 = random.randint(0, 10)
+        nmax = 10
+        n1 = random.randint(0, nmax)
+        n2 = random.randint(0, nmax)
         ans = str(n1 * n2)
         txt = str(n1) + " \u2715 " + str(n2) + " = "
         q = question.Question(txt)
@@ -33,8 +35,9 @@ class PracticeSetGen:
 
     @staticmethod
     def _get_one_subtract_question(slf):
-        v1 = random.randint(0, 100)
-        v2 = random.randint(0, 100)
+        nmax = 1000000
+        v1 = random.randint(0, nmax)
+        v2 = random.randint(0, nmax)
         n1 = max(v1, v2)
         n2 = min(v1, v2)
         ans = str(n1 - n2)
